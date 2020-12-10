@@ -5,7 +5,7 @@ import random
 
 class WindowGenerator:
     def __init__(self, input_width, label_width, shift,
-                 data_df, label_columns=None):
+                 data_df, label_columns=None, references=None):
         # Store the raw data.
         self.train_df = None
         self.val_df = None
@@ -35,17 +35,22 @@ class WindowGenerator:
         self.labels_slice = slice(self.label_start, None)
         self.label_indices = np.arange(self.total_window_size)[self.labels_slice]
 
-        data_df.min().to_csv("./min.csv")
-        data_df.max().to_csv("./max.csv")
+        self.references = references
+        if not references:
+            data_df.min().to_csv("./min.csv", index=True, header=False)
+            data_df.max().to_csv("./max.csv", index=True, header=False)
 
     def split_window(self, normalization=True):
         skeleton_x = []
         skeleton_y = []
 
         if normalization:
-            self.skeleton_df = norm.min_max(self.skeleton_df)
-            self.skeleton_np = self.skeleton_df.to_numpy()
-            self.label_np = norm.min_max(self.label_np)
+            if self.references:
+                self.skeleton_np = norm.min_max(self.skeleton_np, references=self.references)
+                self.label_np = norm.min_max(self.label_np)
+            else:
+                self.skeleton_np = norm.min_max(self.skeleton_np)
+                self.label_np = norm.min_max(self.label_np)
 
         for idx in range(len(self.skeleton_df)-self.total_window_size+1):
             skeleton_x.append(self.skeleton_np[self.input_indices+idx])
