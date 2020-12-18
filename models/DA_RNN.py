@@ -197,8 +197,6 @@ class DA_rnn(nn.Module):
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         print("==> Use accelerator: ", self.device)
 
-        print(X.shape)
-
         self.Encoder = Encoder(input_size=X.shape[1],
                                encoder_num_hidden=encoder_num_hidden,
                                T=T).to(self.device)

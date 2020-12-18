@@ -2,19 +2,20 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 
-def plot(df_real, df_prediction, save_path=None, show=False):
+def plot(TRUE, df_train, df_prediction, save_path=None, show=False):
     fig, ax = plt.subplots(figsize=(50, 10))
-    #
-    # # Plot parameters
-    # START_DATE_FOR_PLOTTING = '2010-01-01'
 
-    plt.plot(df_real.index,
-             df_real.loc[:]['Total_entry'],
+    plt.plot(TRUE.loc[:].index,
+             TRUE.loc[:]["True"],
              color='b',
+             label='TRUE')
+    plt.plot(df_train.index,
+             df_train.loc[:]['Train'],
+             color='orange',
              label='True')
     plt.plot(df_prediction.index,
-             df_prediction.loc[:]['Total_entry'],
-             color='orange',
+             df_prediction.loc[:]['Test'],
+             color='red',
              label='Training predictions')
 
     plt.grid(which='major', color='#cccccc', alpha=0.5)

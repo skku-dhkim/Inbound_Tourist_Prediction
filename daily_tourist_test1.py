@@ -10,14 +10,15 @@ from utils.plot_util import plot
 
 TEST_TYPE = 1  # 0: Before Corona Virus, 1: After Corona Virus, 2: All data use
 # Load data from CSV
-df = pd.read_csv("./data/tourist_daily.csv")
-df = df[["Date", "Total_entry", "KOSPI", "Oil_price", "China_exchange_rate", "Japan_exchange_rate", "USA_exchange_rate",
+df = pd.read_csv("data/tourist_daily_20201216.csv")
+df = df[["Date", "Total_entry", "China_exchange_rate", "Japan_exchange_rate", "USA_exchange_rate",
          "Japan_GDP", "China_GDP", "USA_GDP"]]
+# df = df[["Date", "Total_entry"]]
 
 if TEST_TYPE == 0:
     _df = df.loc[df['Date'] <= '2019-12-31']
-    train_df = _df.loc[df['Date'] <= '2018-12-31']
-    test_df = _df.loc[df['Date'] > '2018-12-31']
+    train_df = _df.loc[_df['Date'] <= '2018-12-31']
+    test_df = _df.loc[_df['Date'] > '2018-12-31']
 elif TEST_TYPE == 1:
     train_df = df.loc[df['Date'] <= '2020-07-31']
     test_df = df.loc[df['Date'] > '2020-07-31']
@@ -41,12 +42,12 @@ print(test_df.head())
 print('All timestamps == {}'.format(len(datelist_train)))
 
 'Hyper-parameters'
-PAST_DATA = 10
-FUTURE_DATA = 1
-SHIFT = 30
+PAST_DATA = 30
+FUTURE_DATA = 30
+SHIFT = 0
 BATCH_SIZE = 32
 HIDDEN_UNITS = 64
-EPOCHS = 1
+EPOCHS = 30
 UPSAMPLE_LEVEL = 10
 
 
@@ -82,48 +83,49 @@ TX, TY = test_wg.test_set()
 print("Test X shape: {}".format(TX.shape))
 print("Test Y shape: {}".format(TY.shape))
 
-# Model
-model = AttentionLSTM(units=HIDDEN_UNITS, BATCH_SIZE=BATCH_SIZE, output_seq=FUTURE_DATA)
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-              loss=tf.keras.losses.MSE,
-              metrics=['mape', 'mae'])
-
-# Training Callbacks
-es = EarlyStopping(monitor='val_loss', min_delta=1e-10, patience=10, verbose=1)
-rlr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, verbose=1)
-tb = TensorBoard('./logs')
-
-history = model.fit(X,
-                    Y,
-                    epochs=EPOCHS,
-                    callbacks=[es, rlr, tb],
-                    validation_split=0.2,
-                    verbose=1,
-                    batch_size=BATCH_SIZE)
-
-# Generate list of sequence of days for predictions
-datelist_future = pd.date_range(datelist_train[-1], periods=SHIFT + FUTURE_DATA, freq='1d').tolist()
-
-# Convert Pandas Timestamp to Datetime object (for transformation) --> FUTURE
-datelist_future_ = []
-for this_timestamp in datelist_future:
-    datelist_future_.append(this_timestamp.date())
-
-
-# Training set performance
-test_x, test_y = train_wg.test_set()
-train_result, train_real = evaluation(test_x, test_y, model, datelist_train)
-print(train_result.head(10))
-print(train_real.head(10))
-# Plot
-img_path = "./result-{}-{}-{}-ALL".format(PAST_DATA, SHIFT, FUTURE_DATA)
-plot(train_real, train_result, show=True, save_path=img_path)
-
-if TEST_TYPE != 2:
-    # Perform predictions
-    test_result, test_real = evaluation(TX, TY, model, datelist_test)
-    print(test_result.head(10))
-    print(test_real.head(10))
-    # Plot
-    img_path = "./result-{}-{}-{}-TEST".format(PAST_DATA, SHIFT, FUTURE_DATA)
-    plot(test_real, test_result, show=True, save_path=img_path)
+# # Model
+# model = AttentionLSTM(units=HIDDEN_UNITS, BATCH_SIZE=BATCH_SIZE, output_seq=FUTURE_DATA)
+# model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=0.001, momentum=True),
+#               loss=tf.keras.losses.MSE,
+#               metrics=['mape', 'mae'])
+#
+# # Training Callbacks
+# es = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
+# rlr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, verbose=1)
+# tb = TensorBoard('./logs/{}'.format(datetime.datetime.today()))
+#
+# history = model.fit(X,
+#                     Y,
+#                     epochs=EPOCHS,
+#                     callbacks=[es, rlr, tb],
+#                     validation_split=0.2,
+#                     verbose=1,
+#                     shuffle=True,
+#                     batch_size=BATCH_SIZE)
+#
+# # Generate list of sequence of days for predictions
+# datelist_future = pd.date_range(datelist_train[-1], periods=SHIFT + FUTURE_DATA, freq='1d').tolist()
+#
+# # Convert Pandas Timestamp to Datetime object (for transformation) --> FUTURE
+# datelist_future_ = []
+# for this_timestamp in datelist_future:
+#     datelist_future_.append(this_timestamp.date())
+#
+#
+# # Training set performance
+# test_x, test_y = train_wg.test_set()
+# train_result, train_real = evaluation(test_x, test_y, model, datelist_train)
+# print(train_result.head(10))
+# print(train_real.head(10))
+# # Plot
+# img_path = "./result-{}-{}-{}-ALL".format(PAST_DATA, SHIFT, FUTURE_DATA)
+# plot(train_real, train_result, show=True, save_path=img_path)
+#
+# if TEST_TYPE != 2:
+#     # Predictions performance
+#     test_result, test_real = evaluation(TX, TY, model, datelist_test)
+#     print(test_result.head(10))
+#     print(test_real.head(10))
+#     # Plot
+#     img_path = "./result-{}-{}-{}-TEST".format(PAST_DATA, SHIFT, FUTURE_DATA)
+#     plot(test_real, test_result, show=True, save_path=img_path)
